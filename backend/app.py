@@ -48,18 +48,28 @@ def create_app() -> Flask:
         except SourceError as error:
             return jsonify({"error": str(error)}), 503
 
-    # Keep-alive thread to prevent free tier from sleeping
-    def keep_alive():
+    # Background thread for keep-alive and daily auto-refresh
+    def background_tasks():
         url = os.environ.get("RENDER_EXTERNAL_URL", "http://127.0.0.1:5050")
+        last_refresh_time = time.time()
+        
         while True:
             time.sleep(14 * 60)  # Ping every 14 minutes
             try:
                 requests.get(url, timeout=10)
-                print(f"Keep-alive ping sent to {url}")
             except Exception:
                 pass
+                
+            # Gunde 1 kere (24 saatte bir) otomatik veriyi yenile
+            if time.time() - last_refresh_time > 24 * 60 * 60:
+                print("Running daily auto-refresh...")
+                try:
+                    refresh_report(force_market_refresh=True)
+                    last_refresh_time = time.time()
+                except Exception as e:
+                    print(f"Auto-refresh failed: {e}")
 
-    threading.Thread(target=keep_alive, daemon=True).start()
+    threading.Thread(target=background_tasks, daemon=True).start()
 
     return app
 

@@ -68,18 +68,21 @@ class YahooChartSource:
         if not result:
             return []
         timestamps = result.get("timestamp") or []
-        quote = ((result.get("indicators", {}).get("quote") or [{}])[0]).get("close") or []
-        closes = []
-        for raw_timestamp, raw_close in zip(timestamps, quote):
+        quote = (result.get("indicators", {}).get("quote") or [{}])[0]
+        closes = quote.get("close") or []
+        volumes = quote.get("volume") or []
+        closes_with_vol = []
+        from itertools import zip_longest
+        for raw_timestamp, raw_close, raw_vol in zip_longest(timestamps, closes, volumes, fillvalue=0):
             if not isinstance(raw_close, (int, float)) or raw_close <= 0:
                 continue
             observed = datetime.fromtimestamp(raw_timestamp, tz=timezone.utc).date()
             if observed >= listing_date:
-                closes.append((observed, float(raw_close)))
-        return closes
+                closes_with_vol.append((observed, float(raw_close), int(raw_vol or 0)))
+        return closes_with_vol
 
-    def latest_close(self, ticker: str) -> tuple[date, float] | None:
-        """Son geçerli günlük kapanışı döndürür; anlık işlem fiyatı değildir."""
+    def latest_close(self, ticker: str) -> tuple[date, float, int] | None:
+        """Son geçerli günlük kapanışı ve hacmi döndürür; anlık işlem fiyatı değildir."""
         response = requests.get(
             f"{self.base_url}/{ticker}.IS",
             params={"range": "10d", "interval": "1d", "events": "history"},
@@ -91,10 +94,12 @@ class YahooChartSource:
         if not result:
             return None
         timestamps = result.get("timestamp") or []
-        closes = ((result.get("indicators", {}).get("quote") or [{}])[0]).get("close") or []
-        for raw_timestamp, raw_close in reversed(list(zip(timestamps, closes))):
+        quote = (result.get("indicators", {}).get("quote") or [{}])[0]
+        closes = quote.get("close") or []
+        volumes = quote.get("volume") or []
+        for raw_timestamp, raw_close, raw_vol in reversed(list(zip(timestamps, closes, volumes))):
             if isinstance(raw_close, (int, float)) and raw_close > 0:
-                return datetime.fromtimestamp(raw_timestamp, tz=timezone.utc).date(), float(raw_close)
+                return datetime.fromtimestamp(raw_timestamp, tz=timezone.utc).date(), float(raw_close), int(raw_vol or 0)
         return None
 
 
@@ -135,11 +140,11 @@ def outcome_from_offer(offer: dict[str, Any], reference_date: date) -> dict[str,
         latest = None
     # BIST'teki ilk işlem gününü 1. seans kabul eder. 5. kapanış yoksa mevcut en son kapanışı alır.
     fifth_index = min(4, len(closes) - 1)
-    fifth_date, fifth_close = closes[fifth_index]
+    fifth_date, fifth_close, _ = closes[fifth_index]
     first_twenty = closes[:20]
     peak = ipo_price
     maximum_drawdown = 0.0
-    for _, close in first_twenty:
+    for _, close, _ in first_twenty:
         peak = max(peak, close)
         maximum_drawdown = max(maximum_drawdown, (peak - close) / peak * 100)
     # Yahoo günlük kapanışları emir defterini içermediği için bu sayı resmî “tavan”
@@ -150,7 +155,7 @@ def outcome_from_offer(offer: dict[str, Any], reference_date: date) -> dict[str,
     initial_streak_broken = False
     break_close = None
     previous_close = ipo_price
-    for _, close in first_twenty:
+    for _, close, _ in first_twenty:
         if close / previous_close - 1 >= 0.095:
             current_limit_up_streak += 1
             longest_limit_up_streak = max(longest_limit_up_streak, current_limit_up_streak)
@@ -164,10 +169,29 @@ def outcome_from_offer(offer: dict[str, Any], reference_date: date) -> dict[str,
     # 15 iş günü içindeki max kâr hesaplaması
     first_fifteen = closes[:15]
     if first_fifteen:
-        max_15d_close = max(close for _, close in first_fifteen)
+        max_15d_close = max(close for _, close, _ in first_fifteen)
         max_return_15d_pct = round((max_15d_close / ipo_price - 1) * 100, 2)
     else:
         max_return_15d_pct = None
+
+    latest_turnover_pct = None
+    if latest:
+        dt, px, vol = latest
+        latest_close_tl = round(px, 2)
+        latest_close_date = dt.isoformat()
+        return_since_ipo_pct = round((px / ipo_price - 1) * 100, 2)
+        
+        # Calculate Cumulative Turnover Rate
+        total_vol = sum(v for _, _, v in closes)
+        offer_size = _number(offer.get("offer_size_mn_tl"))
+        if total_vol > 0 and offer_size and ipo_price > 0:
+            floating_lots = (offer_size * 1000000) / ipo_price
+            if floating_lots > 0:
+                latest_turnover_pct = round((total_vol / floating_lots) * 100, 2)
+    else:
+        latest_close_tl = None
+        latest_close_date = None
+        return_since_ipo_pct = None
 
     return {
         "ticker": offer["ticker"],
@@ -177,11 +201,13 @@ def outcome_from_offer(offer: dict[str, Any], reference_date: date) -> dict[str,
         "return_20d_pct": round((first_twenty[-1][1] / ipo_price - 1) * 100, 2) if len(first_twenty) >= 20 else None,
         "max_drawdown_20d_pct": round(maximum_drawdown, 2) if len(first_twenty) >= 10 else None,
         "max_limit_up_streak": longest_limit_up_streak,
+        "is_streak_active": not initial_streak_broken,
         "max_return_15d_pct": max_return_15d_pct,
         "limit_up_method": "İlk 20 seansta önceki kapanışa göre en az %9,5 artan kapanışların en uzun ardışık serisi; resmî tavan sayısı değildir.",
-        "latest_close_tl": round(latest[1], 2) if latest else None,
-        "latest_close_date": latest[0].isoformat() if latest else None,
-        "return_since_ipo_pct": round((latest[1] / ipo_price - 1) * 100, 2) if latest else None,
+        "latest_close_tl": latest_close_tl,
+        "latest_close_date": latest_close_date,
+        "return_since_ipo_pct": return_since_ipo_pct,
+        "latest_turnover_pct": latest_turnover_pct,
         "broker": offer.get("broker"),
         "broker_key": canonical_broker(offer.get("broker")),
         "sector": offer.get("sector"),

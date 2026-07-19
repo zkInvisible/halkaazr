@@ -94,6 +94,7 @@ def _build_historical_offers(outcomes: list[dict[str, Any]]) -> list[dict[str, A
                     "listing_date", "return_5d_pct", "return_20d_pct", "max_drawdown_20d_pct",
                     "max_limit_up_streak", "limit_up_method", "latest_close_tl", "latest_close_date",
                     "return_since_ipo_pct", "fifth_session_date", "observation_count",
+                    "latest_turnover_pct", "is_streak_active",
                     "source_url", "price_source_url",
                 )
             },

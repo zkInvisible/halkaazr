@@ -543,13 +543,15 @@ function renderDrawerContent(offer, isHistorical) {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: 25 },
         scales: {
           r: {
             min: 0, max: 100,
             ticks: { display: false },
             grid: { color: 'rgba(56,78,126,0.3)' },
             angleLines: { color: 'rgba(56,78,126,0.3)' },
-            pointLabels: { color: '#8494b8', font: { family: 'Inter', size: 11, weight: '600' } },
+            pointLabels: { color: '#8494b8', font: { family: 'Inter', size: 10, weight: '600' } },
           }
         },
         plugins: { legend: { display: false } },

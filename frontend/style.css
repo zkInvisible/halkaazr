@@ -611,13 +611,13 @@ h1 em { font-style: normal; -webkit-text-fill-color: var(--accent); }
 .chart-title   { color: var(--text-primary); font-weight: 700; font-size: 15px; }
 .chart-subtitle{ color: var(--text-tertiary); font-size: 12px; }
 .chart-container { position: relative; height: 200px; }
-.chart-container--tall { height: 320px; }
+.chart-container--tall { height: 260px; }
 
 /* ═══════════════════════════════════════════════════
    HISTORY TABLE
    ═══════════════════════════════════════════════════ */
 .history-table-wrap {
-  overflow-x: auto;
+  width: 100%; overflow-x: auto;
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--radius-md); backdrop-filter: blur(8px);
 }
@@ -628,6 +628,8 @@ h1 em { font-style: normal; -webkit-text-fill-color: var(--accent); }
 .history-table th, .history-table td {
   padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border);
 }
+#brokerTable { font-size: 12px; }
+#brokerTable th, #brokerTable td { padding: 9px 12px; }
 .history-table th {
   position: sticky; top: 0;
   color: var(--text-secondary); font-size: 10px; font-weight: 700;

@@ -22,7 +22,7 @@ from .sources import HalkarzSource, SourceError
 
 CACHE_MAX_AGE_HOURS = 12
 PRICE_LOOKAHEAD_DAYS = 45
-MAX_WORKERS = 6
+MAX_WORKERS = 8
 
 
 def canonical_broker(value: str | None) -> str | None:

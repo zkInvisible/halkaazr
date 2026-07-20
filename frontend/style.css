@@ -437,7 +437,7 @@ h1 em { font-style: normal; -webkit-text-fill-color: var(--accent); }
 .detail-drawer {
   position: fixed; top: 0; right: 0; z-index: 295;
   width: min(var(--drawer-width), 100vw);
-  height: 100vh; overflow-y: auto;
+  height: 100vh; overflow-y: auto; overflow-x: hidden;
   background: rgba(8, 12, 28, 0.98);
   border-left: 1px solid var(--border);
   backdrop-filter: blur(24px);

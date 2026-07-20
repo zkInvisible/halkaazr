@@ -180,6 +180,34 @@ function renderOffers() {
     scoreEl.style.color   = scoreColor(a.evidence_score);
     card.querySelector('.coverage').textContent = `%${fmt(a.evidence_coverage_pct)} veri`;
 
+    const estimateEl = card.querySelector('.offer-estimate');
+    if (offer.offered_lots && offer.ipo_price_tl) {
+      const pct = offer.retail_allocation_pct != null ? offer.retail_allocation_pct : 100;
+      const retailLots = offer.offered_lots * (pct / 100);
+      const participants = 700000;
+      const lotPerPerson = Math.floor(retailLots / participants);
+      
+      if (lotPerPerson > 0) {
+        const recommendedLot = lotPerPerson + 1; // 1 lot fazla girmek garanti olması açısından iyidir
+        const recommendedCost = recommendedLot * offer.ipo_price_tl;
+        estimateEl.innerHTML = `
+          <div style="background: rgba(69, 245, 186, 0.1); border: 1px solid rgba(69, 245, 186, 0.2); border-radius: 6px; padding: 10px; margin-top: 12px; font-size: 12px; line-height: 1.4;">
+            <div style="color: var(--text-secondary); font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between;">
+              <span>💡 Tahmini Lot (700B Kişi)</span>
+              <span style="color: var(--accent);">${lotPerPerson} Lot</span>
+            </div>
+            <div style="color: var(--text-primary);">
+              Garanti olması için <strong>${recommendedLot} Lot (${fmt(Math.round(recommendedCost))} ₺)</strong> talep girebilirsiniz.
+            </div>
+          </div>
+        `;
+      } else {
+        estimateEl.style.display = 'none';
+      }
+    } else {
+      estimateEl.style.display = 'none';
+    }
+
     card.classList.toggle('selected', offer.ticker === state.selectedTicker);
     card.style.animationDelay = `${i * 0.07}s`;
 

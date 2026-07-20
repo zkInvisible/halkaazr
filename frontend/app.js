@@ -395,6 +395,31 @@ function renderDrawerContent(offer, isHistorical) {
       </div>
       
       ${similarHtml}
+
+      ${(() => {
+        if (isHistorical || !offer.offered_lots || !offer.ipo_price_tl) return '';
+        const pct = offer.retail_allocation_pct != null ? offer.retail_allocation_pct : 100;
+        const lotPerPerson = Math.floor((offer.offered_lots * (pct / 100)) / 700000);
+        if (lotPerPerson <= 0) return '';
+        
+        let rec = lotPerPerson * 1.1;
+        let recLot = Math.ceil(rec);
+        if (rec > 100) recLot = Math.ceil(rec / 5) * 5;
+        else if (rec > 50) recLot = Math.ceil(rec / 2) * 2;
+        
+        return `
+          <div style="background: rgba(69, 245, 186, 0.08); border: 1px solid rgba(69, 245, 186, 0.2); border-radius: 8px; padding: 16px; margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="color: var(--text-secondary); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">💡 Tahmini Katılım (700B Kişi)</div>
+              <div style="color: var(--text-primary); font-size: 13px;">Düz hesap +%10 garanti payı ile tavsiye</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="color: var(--accent); font-weight: 800; font-size: 18px;">${recLot} Lot</div>
+              <div style="color: var(--text-primary); font-weight: 600; font-size: 14px; margin-top: 2px;">${fmt(Math.round(recLot * offer.ipo_price_tl))} ₺</div>
+            </div>
+          </div>
+        `;
+      })()}
     </div>
 
     <!-- Tab: Score -->

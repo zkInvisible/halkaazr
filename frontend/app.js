@@ -837,13 +837,16 @@ function renderBrokers() {
         ? 'linear-gradient(90deg,var(--amber),#e8a735)'
         : 'linear-gradient(90deg,var(--red),#d44)';
 
+    const maxVals = (broker.recent_offers || []).map(o => o.max_return_15d_pct).filter(v => v != null);
+    const avgMaxReturn = maxVals.length ? maxVals.reduce((a, b) => a + b, 0) / maxVals.length : null;
+
     const row = document.createElement('tr');
     row.dataset.brokerIdx = idx;
     row.innerHTML = `
       <td style="font-weight:700">${name}</td>
       <td>${broker.sample_size}</td>
       <td>${fmtPct(broker.weighted_positive_rate_pct)}</td>
-      <td style="color:${returnColor(broker.weighted_median_return_5d)};font-weight:600">${fmtPct(broker.weighted_median_return_5d)}</td>
+      <td style="color:${returnColor(avgMaxReturn)};font-weight:600">${avgMaxReturn != null ? fmtPct(avgMaxReturn) : '—'}</td>
       <td>
         <div class="mini-bar-wrap">
           <strong style="color:${scoreColor(scoreVal)};min-width:34px;font-size:12px">${scoreVal?.toFixed(1) ?? '—'}</strong>

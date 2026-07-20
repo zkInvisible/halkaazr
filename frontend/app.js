@@ -890,10 +890,15 @@ function renderBrokerChart(brokers) {
 
   const labels = brokers.map(b => cap(b.broker_key));
   const scores = brokers.map(b => b.stability_score ?? 0);
-  const colors = scores.map(s =>
-    s >= 70 ? 'rgba(69,245,186,0.75)'
-  : s >= 45 ? 'rgba(255,190,85,0.75)'
-            : 'rgba(255,107,133,0.75)'
+  const bgColors = scores.map(s =>
+    s >= 70 ? 'rgba(69,245,186,0.25)'
+  : s >= 45 ? 'rgba(255,190,85,0.25)'
+            : 'rgba(255,107,133,0.25)'
+  );
+  const borderColors = scores.map(s =>
+    s >= 70 ? 'rgba(69,245,186,0.8)'
+  : s >= 45 ? 'rgba(255,190,85,0.8)'
+            : 'rgba(255,107,133,0.8)'
   );
 
   state.charts.brokerBar = new Chart(ctx, {
@@ -902,8 +907,9 @@ function renderBrokerChart(brokers) {
       labels,
       datasets: [{
         data: scores,
-        backgroundColor: colors,
-        borderRadius: 6, borderWidth: 0,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderRadius: 4, borderWidth: 1,
       }]
     },
     options: {
